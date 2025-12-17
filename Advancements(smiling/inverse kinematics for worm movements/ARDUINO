@@ -1,0 +1,64 @@
+-------------i was in school and i asked people or surveyed people how  they would make a worm and an answer that helped me was worms pushing of
+with there back legs now all i need is 2 motors i spent so much money for 15 motors ///however i still would need an arduino mega for all the stuff but i know now i can prolly do most of it
+
+
+{if you guys have any ideas for me pls tell me.Im thinking of implememnt my past neural network code maybe for speach i dont know (in the near future id probably want it to be able to talk to me
+to do trivias with me maybe help me out with some code  when i say debug a code it starts talking thats the sort of thing i want)
+
+
+
+#include <Servo.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+Servo myServo1, myServo2;
+int servoPin1 = 10, servoPin2 = 9;
+int trigPin = 12, echoPin = 11;
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+void setup() {
+  myServo1.attach(servoPin1);
+  myServo2.attach(servoPin2);
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+  Serial.begin(9600);
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) { for (;;); }
+  display.clearDisplay();
+}
+
+void loop() {
+
+  digitalWrite(trigPin, LOW); delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH); delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  int distance = pulseIn(echoPin, HIGH) / 58;
+  Serial.println(distance);
+
+
+  display.clearDisplay();
+  display.fillCircle(40, 25, 5, SSD1306_WHITE);
+  display.fillCircle(88, 25, 5, SSD1306_WHITE);
+
+  //ANAYAKOJIO FACE
+  display.drawLine(50, 50, 78, 50, SSD1306_WHITE);
+
+  //SMILE
+  if (distance < 30) {
+    display.drawLine(50, 52, 78, 48, SSD1306_WHITE);
+  }
+
+  display.display();
+
+
+  if (distance < 30) {
+    for (int i = 0; i <= 45; i++) { myServo1.write(i); myServo2.write(45-i); delay(20); }
+    for (int i = 45; i >= 0; i--) { myServo1.write(i); myServo2.write(45-i); delay(20); }
+  }
+
+  delay(50);
+}
