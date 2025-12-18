@@ -1,0 +1,104 @@
+#include <Servo.h>
+#include <Wire.h>
+#include <Adafruit_GFX.h>
+#include <Adafruit_SSD1306.h>
+
+// ==== SERVO SETUP ====
+Servo myServo1, myServo2;
+const int servoPin1 = 10;
+const int servoPin2 = 9;
+
+// ====ultras
+const int trigPin = 12;
+const int echoPin = 11;
+
+// ==== oled
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+// ==== constants
+const int maxDistance = 30; 
+const int servoAngle = 45;  
+const int servoDelay = 20; 
+
+void setup() {
+  
+  myServo1.attach(servoPin1);
+  myServo2.attach(servoPin2);
+  
+
+  pinMode(trigPin, OUTPUT);
+  pinMode(echoPin, INPUT);
+
+
+  Serial.begin(9600);
+
+
+  if (!display.begin(SSD1306_SWITCHCAPVCC, 0x3C)) {
+    Serial.println(F("SSD1306 allocation failed"));
+    for (;;);
+  }
+  display.clearDisplay();
+  display.display();
+}
+
+void loop() {
+  int distance = readUltrasonic();
+  Serial.println(distance);
+
+  drawFace(distance);
+
+
+  if (distance < maxDistance) {
+    moveServosForward();
+    moveServosBackward();
+  }
+
+  delay(50); 
+}
+
+
+
+int readUltrasonic() {
+  digitalWrite(trigPin, LOW);
+  delayMicroseconds(2);
+  digitalWrite(trigPin, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(trigPin, LOW);
+  int duration = pulseIn(echoPin, HIGH);
+  int distance = duration / 58; 
+  return distance;
+}
+
+// reaction
+void drawFace(int distance) {
+  display.clearDisplay();
+  display.fillCircle(40, 25, 5, SSD1306_WHITE);
+  display.fillCircle(88, 25, 5, SSD1306_WHITE);
+  if (distance < maxDistance) {
+    display.drawLine(50, 52, 78, 48, SSD1306_WHITE); // Smile
+  } else {
+    display.drawLine(50, 50, 78, 50, SSD1306_WHITE); // Anayakoji
+  }
+
+  display.display();
+}
+
+// Smooth forward doing worm ass dance
+void moveServosForward() {
+  for (int i = 0; i <= servoAngle; i++) {
+    myServo1.write(i);
+    myServo2.write(servoAngle - i);
+    delay(servoDelay);
+  }
+}
+
+// Smooth backy
+void moveServosBackward() {
+  for (int i = servoAngle; i >= 0; i--) {
+    myServo1.write(i);
+    myServo2.write(servoAngle - i);
+    delay(servoDelay);
+  }
+}
