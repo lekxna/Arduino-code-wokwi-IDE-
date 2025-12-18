@@ -1,0 +1,13 @@
+the PLAN on the movement im thinking of using the ultra sonic sound sensor to detect
+JERK acceleration and velocity and theres different responses to these physics calculations 
+
+MY process to find these things is use the ultrta sonic sound sensor to detect  distance then give it a 1 second delay between loops to find velocity (then i differentiate the velocity then differentiate the acceleration)
+
+the reactions i want the robot to do  are as such
+
+velocity(reacts to  velocities above .5m/s
+Acceleration(reacts to acceleration above 1m/s^2
+Jerk(reacts to jerk above 1m/s^3
+
+reactions will include changing the face 
+changing the motor speed and activating the motor
