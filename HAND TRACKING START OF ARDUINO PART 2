@@ -1,0 +1,147 @@
+HAND TRACKING
+import cv2
+import mediapipe as mp
+from mediapipe.tasks import python as mp_tasks
+from mediapipe.tasks.python import vision as mp_vision
+import urllib.request
+import os
+
+
+# Hand landmark connections
+
+HAND_CONNECTIONS = [
+    (0, 1), (1, 2), (2, 3), (3, 4),       # thumb
+    (0, 5), (5, 6), (6, 7), (7, 8),       # index
+    (0, 9), (9, 10), (10, 11), (11, 12),  # middle
+    (0, 13), (13, 14), (14, 15), (15, 16),# ring
+    (0, 17), (17, 18), (18, 19), (19, 20),# pinky
+    (5, 9), (9, 13), (13, 17)             # palm connections
+]
+
+
+# Pose ARMS
+
+POSE_CONNECTIONS = [
+    (11, 13), (13, 15),  # L arm: shoulder-elbow-wrist
+    (12, 14), (14, 16)   # R arm
+]
+
+#download models
+hand_model_path = 'hand_landmarker.task'
+if not os.path.exists(hand_model_path):
+    print("Downloading hand landmarker model...")
+    urllib.request.urlretrieve(
+        'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task',
+        hand_model_path
+    )
+
+pose_model_path = 'pose_landmarker.task'
+if not os.path.exists(pose_model_path):
+    print("Downloading pose landmarker model...")
+    urllib.request.urlretrieve(
+        'https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task',
+        pose_model_path
+    )
+
+
+# Initialize Hand Landmarker
+
+hand_base_options = mp_tasks.BaseOptions(model_asset_path=hand_model_path)
+hand_options = mp_vision.HandLandmarkerOptions(
+    base_options=hand_base_options,
+    num_hands=2
+)
+hand_landmarker = mp_vision.HandLandmarker.create_from_options(hand_options)
+
+
+# Pose Landmarker
+
+pose_base_options = mp_tasks.BaseOptions(model_asset_path=pose_model_path)
+pose_options = mp_vision.PoseLandmarkerOptions(
+    base_options=pose_base_options,
+    num_poses=1
+)
+pose_landmarker = mp_vision.PoseLandmarker.create_from_options(pose_options)
+
+# ------------------------------
+# Start webcam
+# ------------------------------
+cap = cv2.VideoCapture(0)
+
+while cap.isOpened():
+    ret, frame = cap.read()
+    if not ret:
+        break
+
+    # Flip image for mirror view
+    frame = cv2.flip(frame, 1)
+
+    # Convert to MediaPipe image
+    mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=frame)
+
+    # ------------------------------
+    # Detect hand landmarks
+    # ------------------------------
+    hand_result = hand_landmarker.detect(mp_image)
+
+    # ------------------------------
+    # Detect pose landmarks
+    # ------------------------------
+    pose_result = pose_landmarker.detect(mp_image)
+
+    # ------------------------------
+    # Draw pose landmarks and connections (arms in blue)
+    # ------------------------------
+    if pose_result.pose_landmarks:
+        for pose_landmarks in pose_result.pose_landmarks:
+            for connection in POSE_CONNECTIONS:
+                start_idx, end_idx = connection
+                start_landmark = pose_landmarks[start_idx]
+                end_landmark = pose_landmarks[end_idx]
+                start_x = int(start_landmark.x * frame.shape[1])
+                start_y = int(start_landmark.y * frame.shape[0])
+                end_x = int(end_landmark.x * frame.shape[1])
+                end_y = int(end_landmark.y * frame.shape[0])
+                cv2.line(frame, (start_x, start_y), (end_x, end_y), (255, 0, 0), 3)  # Blue lines
+
+    
+    # purple hands
+   
+    if hand_result.hand_landmarks:
+        for hand_landmarks in hand_result.hand_landmarks:
+
+
+            # Draw connections
+            #-------
+            for connection in HAND_CONNECTIONS:
+                start_idx, end_idx = connection
+                start_landmark = hand_landmarks[start_idx]
+                end_landmark = hand_landmarks[end_idx]
+                start_x = int(start_landmark.x * frame.shape[1])
+                start_y = int(start_landmark.y * frame.shape[0])
+                end_x = int(end_landmark.x * frame.shape[1])
+                end_y = int(end_landmark.y * frame.shape[0])
+                cv2.line(frame, (start_x, start_y), (end_x, end_y), (255, 0, 255), 2)
+            
+            # Draw dots
+            for landmark in hand_landmarks:
+                x = int(landmark.x * frame.shape[1])
+                y = int(landmark.y * frame.shape[0])
+                cv2.circle(frame, (x, y), 3, (255, 0, 255), -1)
+
+
+    # ---Show webcam----
+    
+    cv2.imshow("Hand and Arm Tracking", frame)
+
+    # Press 'q' to quit
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
+
+
+# Cleanup
+
+cap.release()
+cv2.destroyAllWindows()
+hand_landmarker.close()
+pose_landmarker.close()
